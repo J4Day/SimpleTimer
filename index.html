@@ -249,10 +249,20 @@
         checkResult() {
             const finalTime = parseFloat((this.elapsedTime / 1000).toFixed(2));
 
-            // Fixed: Use arrow function to preserve 'this' context
-            this.targetTimes.forEach((item) => {
-                if (finalTime === item) {
+            // Проверяем попадание в цель с округлением только вверх
+            this.targetTimes.forEach((targetTime) => {
+                // Если время от X.95 до X.00 - округляем до X.00 и считаем попаданием
+                const tolerance = 0.05; // 5 сотых допуск только снизу
+
+                // Проверяем если время меньше цели, но близко к ней
+                if (finalTime >= targetTime - tolerance && finalTime <= targetTime) {
+                    // Показываем пользователю округленное время
+                    const wholeSeconds = Math.floor(targetTime);
+                    const centiseconds = Math.floor((targetTime - wholeSeconds) * 100);
+                    const roundedTime = `${wholeSeconds.toString().padStart(2, '0')}:${centiseconds.toString().padStart(2, '0')}`;
+                    this.timerDisplay.textContent = roundedTime;
                     this.timerDisplay.className = 'timer-display all-targets';
+                    return; // Выходим после первого совпадения
                 }
             });
         }
