@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Останови секундомер - Бизнес Форум</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Основной контент */
+        .game-container {
+            background: #ffffff;
+            border-radius: 8px;
+            padding: 60px 80px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            z-index: 10;
+            position: relative;
+            max-width: 500px;
+            width: 90%;
+            border: 1px solid #e0e0e0;
+        }
+
+        .timer-display {
+            font-size: 6rem;
+            font-weight: 400;
+            color: #333333;
+            margin: 40px 0;
+            font-family: 'Consolas', 'Monaco', 'Lucida Console', 'Liberation Mono', 'DejaVu Sans Mono', 'Bitstream Vera Sans Mono', 'Courier New', monospace;
+            letter-spacing: 4px;
+            background: #fafafa;
+            padding: 30px 40px;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+
+        .timer-display.running {
+            color: #000000;
+            background: #ffffff;
+        }
+
+        .timer-display.winner {
+            color: #333333;
+            background: #f0f0f0;
+        }
+
+        .timer-display.all-targets {
+            color: #ffffff;
+            background: #27ae60;
+        }
+
+        .controls {
+            margin: 30px 0;
+        }
+
+        .space-key {
+            background: #333333;
+            color: #ffffff;
+            padding: 15px 40px;
+            border: none;
+            border-radius: 4px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-family: inherit;
+        }
+
+        .space-key:hover {
+            background: #555555;
+        }
+
+        .space-key:active {
+            background: #222222;
+        }
+        .winner {
+            background: #27ae60 !important;
+            color: #fff !important;
+        }
+
+        .instructions {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            border-left: 4px solid #007bff;
+        }
+
+        .instructions h3 {
+            margin-bottom: 10px;
+            color: #495057;
+        }
+
+        .instructions p {
+            color: #6c757d;
+            margin-bottom: 8px;
+        }
+
+        .target-times {
+            color: #28a745;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+<div class="game-container">
+    <div class="timer-display" id="timerDisplay">00.00</div>
+</div>
+
+<script>
+    class StopwatchGame {
+        constructor() {
+            this.startTime = 0;
+            this.elapsedTime = 0;
+            this.timerInterval = null;
+            this.isRunning = false;
+            this.targetTimes = [3.00, 5.00, 6.00]; // Целевые времена
+            this.maxTime = 7.00; // Максимальное время
+            this.completedTargets = []; // Завершенные цели
+            this.gameEnded = false;
+            this.stopCount = 0; // Счетчик остановок
+            this.maxStops = 3; // Максимальное количество остановок
+
+            this.timerDisplay = document.getElementById('timerDisplay');
+
+            this.initEventListeners();
+        }
+
+        initEventListeners() {
+            // Обработчик клавиш PageUp и PageDown
+            document.addEventListener('keydown', (e) => {
+                if (e.code === 'PageUp' || e.code === 'PageDown' || e.code === "ArrowUp" || e.code === "ArrowDown") {
+                    e.preventDefault();
+                    this.toggleTimer();
+                }
+
+                // Обработчик клавиши Tab для принудительного завершения
+                if (e.code === 'Tab') {
+                    e.preventDefault();
+                    this.forceEndGame();
+                }
+            });
+
+            // Обработчик кнопки
+        }
+
+        toggleTimer() {
+            if (this.gameEnded) {
+                this.resetGame();
+                return;
+            }
+
+            if (this.isRunning) {
+                this.stopTimer();
+            } else {
+                // Проверка лимита остановок перед стартом
+                if (this.stopCount >= this.maxStops) {
+                    this.forceEndGame();
+                    return;
+                }
+                this.startTimer();
+            }
+        }
+
+        startTimer() {
+            if (!this.isRunning && !this.gameEnded) {
+                if (this.elapsedTime === 0) {
+                    // Новая игра
+                    this.completedTargets = [];
+                    this.startTime = Date.now();
+                } else {
+                    // Продолжение после остановки
+                    this.startTime = Date.now() - this.elapsedTime;
+                }
+
+                this.isRunning = true;
+
+                this.timerInterval = setInterval(() => {
+                    this.updateDisplay();
+                    this.checkAutoStop();
+                }, 10); // Обновление каждые 10мс для точности
+
+                this.updateUI();
+            }
+        }
+
+        stopTimer() {
+            if (this.isRunning) {
+                this.isRunning = false;
+                clearInterval(this.timerInterval);
+                this.stopCount++; // Увеличиваем счетчик остановок
+                this.checkResult();
+                this.updateUI();
+
+                // Проверяем лимит остановок
+                if (this.stopCount >= this.maxStops) {
+                    this.forceEndGame();
+                }
+            }
+        }
+
+        updateDisplay() {
+            this.elapsedTime = Date.now() - this.startTime;
+            const seconds = (this.elapsedTime / 1000);
+            this.timerDisplay.textContent = seconds.toFixed(2);
+        }
+
+        checkAutoStop() {
+            const currentTime = parseFloat((this.elapsedTime / 1000).toFixed(2));
+
+            // Автоматическая остановка на 7.00 секунд
+            if (currentTime >= this.maxTime) {
+                this.isRunning = false;
+                clearInterval(this.timerInterval);
+                this.gameEnded = true;
+                this.updateUI();
+            }
+        }
+
+        checkResult() {
+            const finalTime = parseFloat((this.elapsedTime / 1000).toFixed(2));
+
+            // Fixed: Use arrow function to preserve 'this' context
+            this.targetTimes.forEach((item) => {
+                if (finalTime === item) {
+                    this.timerDisplay.className = 'timer-display all-targets';
+                }
+            });
+        }
+
+        forceEndGame() {
+            this.isRunning = false;
+            this.gameEnded = true;
+            clearInterval(this.timerInterval);
+            this.updateUI();
+        }
+
+        resetGame() {
+            this.isRunning = false;
+            this.elapsedTime = 0;
+            this.startTime = 0;
+            this.completedTargets = [];
+            this.gameEnded = false;
+            this.stopCount = 0; // Сбрасываем счетчик остановок
+            clearInterval(this.timerInterval);
+            this.timerDisplay.textContent = '00.00';
+            this.timerDisplay.className = 'timer-display';
+            this.updateUI();
+        }
+
+        updateUI() {
+            if (this.gameEnded) {
+                if (this.timerDisplay.className !== 'timer-display all-targets') {
+                    this.timerDisplay.className = 'timer-display';
+                }
+            } else if (this.isRunning) {
+                if (this.timerDisplay.className !== 'timer-display all-targets') {
+                    this.timerDisplay.className = 'timer-display running';
+                }
+            } else {
+                if (this.timerDisplay.className !== 'timer-display winner' &&
+                    this.timerDisplay.className !== 'timer-display all-targets') {
+                    this.timerDisplay.className = 'timer-display';
+                }
+            }
+        }
+    }
+
+    // Запуск игры
+    const game = new StopwatchGame();
+</script>
+<script>
+    document.addEventListener("keydown", function(event) {
+        console.log("Key pressed:", event.key, " | Code:", event.code);
+    });
+</script>
+</body>
+</html>
