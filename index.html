@@ -171,6 +171,12 @@
                     e.preventDefault();
                     this.toggleTimer();
                 }
+
+                // Обработчик клавиши Tab для сброса
+                if (e.code === 'Tab') {
+                    e.preventDefault();
+                    this.resetGame();
+                }
             });
 
             // Обработчик кнопки
