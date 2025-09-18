@@ -13,116 +13,75 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #f5f5f5;
+            background: #000000;
             height: 100vh;
+            width: 100vw;
             display: flex;
-            flex-direction: column;
             justify-content: center;
             align-items: center;
             overflow: hidden;
-            position: relative;
+            margin: 0;
+            padding: 0;
         }
 
         /* Основной контент */
         .game-container {
-            background: #ffffff;
-            border-radius: 8px;
-            padding: 60px 80px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            text-align: center;
-            z-index: 10;
-            position: relative;
-            max-width: 500px;
-            width: 90%;
-            border: 1px solid #e0e0e0;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #000000;
         }
 
         .timer-display {
-            font-size: 6rem;
-            font-weight: 400;
-            color: #333333;
-            margin: 40px 0;
+            font-size: 25vw;
+            font-weight: 300;
+            color: #ffffff;
             font-family: 'Consolas', 'Monaco', 'Lucida Console', 'Liberation Mono', 'DejaVu Sans Mono', 'Bitstream Vera Sans Mono', 'Courier New', monospace;
-            letter-spacing: 4px;
-            background: #fafafa;
-            padding: 30px 40px;
-            border-radius: 4px;
-            transition: all 0.2s ease;
+            letter-spacing: 0.02em;
+            text-align: center;
+            line-height: 1;
+            transition: all 0.3s ease;
+            user-select: none;
         }
 
         .timer-display.running {
-            color: #000000;
-            background: #ffffff;
+            color: #00ff00;
         }
 
         .timer-display.winner {
-            color: #333333;
-            background: #f0f0f0;
+            color: #ffff00;
         }
 
         .timer-display.all-targets {
-            color: #ffffff;
-            background: #27ae60;
+            color: #00ff00;
+            text-shadow: 0 0 50px #00ff00;
         }
 
-        .controls {
-            margin: 30px 0;
+        /* Адаптивность для разных экранов */
+        @media screen and (max-width: 768px) {
+            .timer-display {
+                font-size: 35vw;
+            }
         }
 
-        .space-key {
-            background: #333333;
-            color: #ffffff;
-            padding: 15px 40px;
-            border: none;
-            border-radius: 4px;
-            font-size: 1rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            font-family: inherit;
+        @media screen and (max-height: 600px) {
+            .timer-display {
+                font-size: 20vh;
+            }
         }
 
-        .space-key:hover {
-            background: #555555;
-        }
-
-        .space-key:active {
-            background: #222222;
-        }
-        .winner {
-            background: #27ae60 !important;
-            color: #fff !important;
-        }
-
-        .instructions {
-            margin-top: 20px;
-            padding: 20px;
-            background: #f8f9fa;
-            border-radius: 4px;
-            border-left: 4px solid #007bff;
-        }
-
-        .instructions h3 {
-            margin-bottom: 10px;
-            color: #495057;
-        }
-
-        .instructions p {
-            color: #6c757d;
-            margin-bottom: 8px;
-        }
-
-        .target-times {
-            color: #28a745;
-            font-weight: bold;
+        @media screen and (orientation: landscape) and (max-height: 500px) {
+            .timer-display {
+                font-size: 15vh;
+            }
         }
     </style>
 </head>
 <body>
 <div class="game-container">
-    <div class="timer-display" id="timerDisplay">00.00</div>
+    <div class="timer-display" id="timerDisplay">00:00</div>
 </div>
 
 <script>
@@ -136,8 +95,6 @@
             this.maxTime = 7.00; // Максимальное время
             this.completedTargets = []; // Завершенные цели
             this.gameEnded = false;
-            this.stopCount = 0; // Счетчик остановок
-            this.maxStops = 3; // Максимальное количество остановок
 
             this.timerDisplay = document.getElementById('timerDisplay');
 
@@ -150,12 +107,6 @@
                 if (e.code === 'PageUp' || e.code === 'PageDown' || e.code === "ArrowUp" || e.code === "ArrowDown") {
                     e.preventDefault();
                     this.toggleTimer();
-                }
-
-                // Обработчик клавиши Tab для принудительного завершения
-                if (e.code === 'Tab') {
-                    e.preventDefault();
-                    this.forceEndGame();
                 }
             });
 
@@ -171,11 +122,6 @@
             if (this.isRunning) {
                 this.stopTimer();
             } else {
-                // Проверка лимита остановок перед стартом
-                if (this.stopCount >= this.maxStops) {
-                    this.forceEndGame();
-                    return;
-                }
                 this.startTimer();
             }
         }
@@ -206,21 +152,20 @@
             if (this.isRunning) {
                 this.isRunning = false;
                 clearInterval(this.timerInterval);
-                this.stopCount++; // Увеличиваем счетчик остановок
                 this.checkResult();
                 this.updateUI();
-
-                // Проверяем лимит остановок
-                if (this.stopCount >= this.maxStops) {
-                    this.forceEndGame();
-                }
             }
         }
 
         updateDisplay() {
             this.elapsedTime = Date.now() - this.startTime;
-            const seconds = (this.elapsedTime / 1000);
-            this.timerDisplay.textContent = seconds.toFixed(2);
+            const totalSeconds = (this.elapsedTime / 1000);
+            const wholeSeconds = Math.floor(totalSeconds);
+            const centiseconds = Math.floor((totalSeconds - wholeSeconds) * 100);
+
+            // Форматируем: 00:00, 01:23, 02:45 и т.д.
+            const formattedTime = `${wholeSeconds.toString().padStart(2, '0')}:${centiseconds.toString().padStart(2, '0')}`;
+            this.timerDisplay.textContent = formattedTime;
         }
 
         checkAutoStop() {
@@ -246,22 +191,14 @@
             });
         }
 
-        forceEndGame() {
-            this.isRunning = false;
-            this.gameEnded = true;
-            clearInterval(this.timerInterval);
-            this.updateUI();
-        }
-
         resetGame() {
             this.isRunning = false;
             this.elapsedTime = 0;
             this.startTime = 0;
             this.completedTargets = [];
             this.gameEnded = false;
-            this.stopCount = 0; // Сбрасываем счетчик остановок
             clearInterval(this.timerInterval);
-            this.timerDisplay.textContent = '00.00';
+            this.timerDisplay.textContent = '00:00';
             this.timerDisplay.className = 'timer-display';
             this.updateUI();
         }
