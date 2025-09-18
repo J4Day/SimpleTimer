@@ -29,9 +29,11 @@
             width: 100vw;
             height: 100vh;
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
             background: #000000;
+            position: relative;
         }
 
         .timer-display {
@@ -77,11 +79,71 @@
                 font-size: 15vh;
             }
         }
+
+        /* Кнопка управления */
+        .control-button {
+            position: absolute;
+            bottom: 8vh;
+            left: 50%;
+            transform: translateX(-50%);
+            background: transparent;
+            border: 2px solid #ffffff;
+            color: #ffffff;
+            padding: 20px 40px;
+            font-size: 2.5vw;
+            font-weight: 300;
+            font-family: 'Consolas', 'Monaco', 'Lucida Console', 'Liberation Mono', 'DejaVu Sans Mono', 'Bitstream Vera Sans Mono', 'Courier New', monospace;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            user-select: none;
+            border-radius: 0;
+            min-width: 200px;
+            text-align: center;
+        }
+
+        .control-button:hover {
+            background: #ffffff;
+            color: #000000;
+        }
+
+        .control-button:active {
+            transform: translateX(-50%) scale(0.95);
+        }
+
+        .control-button.running {
+            border-color: #00ff00;
+            color: #00ff00;
+        }
+
+        .control-button.running:hover {
+            background: #00ff00;
+            color: #000000;
+        }
+
+        /* Адаптивность для кнопки */
+        @media screen and (max-width: 768px) {
+            .control-button {
+                font-size: 4vw;
+                padding: 15px 30px;
+                min-width: 150px;
+            }
+        }
+
+        @media screen and (max-height: 600px) {
+            .control-button {
+                font-size: 3vh;
+                bottom: 5vh;
+                padding: 12px 25px;
+            }
+        }
     </style>
 </head>
 <body>
 <div class="game-container">
     <div class="timer-display" id="timerDisplay">00:00</div>
+    <button class="control-button" id="controlButton">СТАРТ</button>
 </div>
 
 <script>
@@ -97,6 +159,7 @@
             this.gameEnded = false;
 
             this.timerDisplay = document.getElementById('timerDisplay');
+            this.controlButton = document.getElementById('controlButton');
 
             this.initEventListeners();
         }
@@ -111,6 +174,9 @@
             });
 
             // Обработчик кнопки
+            this.controlButton.addEventListener('click', () => {
+                this.toggleTimer();
+            });
         }
 
         toggleTimer() {
@@ -204,19 +270,26 @@
         }
 
         updateUI() {
+            // Обновление отображения таймера
             if (this.gameEnded) {
                 if (this.timerDisplay.className !== 'timer-display all-targets') {
                     this.timerDisplay.className = 'timer-display';
                 }
+                this.controlButton.textContent = 'РЕСТАРТ';
+                this.controlButton.className = 'control-button';
             } else if (this.isRunning) {
                 if (this.timerDisplay.className !== 'timer-display all-targets') {
                     this.timerDisplay.className = 'timer-display running';
                 }
+                this.controlButton.textContent = 'СТОП';
+                this.controlButton.className = 'control-button running';
             } else {
                 if (this.timerDisplay.className !== 'timer-display winner' &&
                     this.timerDisplay.className !== 'timer-display all-targets') {
                     this.timerDisplay.className = 'timer-display';
                 }
+                this.controlButton.textContent = this.elapsedTime === 0 ? 'СТАРТ' : 'ПРОДОЛЖИТЬ';
+                this.controlButton.className = 'control-button';
             }
         }
     }
